@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: build-counter-config
+  namespace: pulumi-kubernetes-operator
+data:
+  count: "0"

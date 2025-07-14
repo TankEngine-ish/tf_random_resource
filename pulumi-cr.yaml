@@ -1,0 +1,75 @@
+apiVersion: pulumi.com/v1
+kind: Stack
+metadata:
+  name: docker-ci-test
+  namespace: pulumi-kubernetes-operator
+spec:
+  projectRepo: 
+  repoDir: pulumi-brain
+  branch: test
+
+
+
+  stack: docker-ci-test
+  serviceAccountName: pulumi-kubernetes-operator
+  resyncFrequencySeconds: 60
+  destroyOnFinalize: false
+
+  envRefs:
+    DOCKER_USERNAME:
+      type: Secret
+      secret:
+        name: dockerhub-secret
+        key: username
+    DOCKER_PASSWORD:
+      type: Secret
+      secret:
+        name: dockerhub-secret
+        key: password
+
+  workspaceTemplate:
+    spec:
+      image: pulumi/pulumi:3.171.0-nonroot
+      env:
+        - name: DOCKER_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: dockerhub-secret
+              key: username
+        - name: DOCKER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: dockerhub-secret
+              key: password
+
+      podTemplate:
+        spec:
+          containers:
+            - name: pulumi
+              image: pulumi/pulumi:3.171.0-nonroot
+              command: ["sh", "-c", "pulumi up --yes"]
+              env:
+                - name: DOCKER_HOST
+                  value: tcp://localhost:2375
+              volumeMounts:
+                - name: workspace
+                  mountPath: /workspace
+
+            - name: docker-dind
+              image: docker:28.3.1-dind-alpine3.22
+              securityContext:
+                privileged: true
+              env:
+                - name: DOCKER_TLS_CERTDIR
+                  value: ""
+              ports:
+                - containerPort: 2375
+              volumeMounts:
+                - name: dockersock
+                  mountPath: /var/run/docker.sock
+
+          volumes:
+            - name: workspace
+              emptyDir: {}
+            - name: dockersock
+              emptyDir: {}

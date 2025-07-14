@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: reset-build-counter
+  namespace: pulumi-kubernetes-operator
+spec:
+  schedule: "0 0 * * *"
+  timeZone: "Europe/Sofia"          
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          
+          serviceAccountName: pulumi-kubernetes-operator
+          restartPolicy: OnFailure
+          containers:
+            - name: reset-counter
+              image: bitnami/kubectl:1.27
+              command:
+                - sh
+                - -c
+                - |
+                  kubectl patch configmap build-counter-config \
+                    -n pulumi-kubernetes-operator \
+                    --type merge \
+                    -p '{"data":{"count":"0"}}'
