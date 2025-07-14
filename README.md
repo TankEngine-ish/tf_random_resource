@@ -1,1 +1,1 @@
-This is an example of a terraform random resource provider which would be used only for testing.
+This is an example of a pulumi dockerfile strategy
